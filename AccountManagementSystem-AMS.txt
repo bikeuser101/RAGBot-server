@@ -1,0 +1,142 @@
+
+### **Account Management System (AMS)**
+- **Function**: Manages different types of accounts (savings, checking, loans, etc.), account creation, account status changes, and balance updates.
+- **APIs**: Open new accounts, update account details, close accounts, and retrieve account balances.
+- **Batch Components**: Periodic account balance reconciliation, interest calculation, and statement generation.
+- **Kafka Components**: Real-time account updates, balance change notifications, and account activity streaming.
+- **Documentation**: API documentation, account management procedures, and batch processing guides.
+
+### Account Management System (AMS)
+
+#### Open API Specification (OpenAPI 3.0)
+```yaml
+openapi: 3.0.1
+info:
+  title: Account Management System API
+  version: 1.0.0
+  description: API for managing bank accounts.
+servers:
+  - url: https://api.bank.com/v1
+paths:
+  /accounts:
+    post:
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '201':
+          description: Account created successfully
+  /accounts/{accountId}:
+    get:
+      summary: Get an account by ID
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+    put:
+      summary: Update an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type
+
+: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+      responses:
+        '200':
+          description: Account updated successfully
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        balance:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+```
+
+#### API Documentation
+- **POST /accounts**: Creates a new account. Requires a JSON body with account details.
+- **GET /accounts/{accountId}**: Retrieves an account by its ID.
+- **PUT /accounts/{accountId}**: Updates an existing account. Requires a JSON body with updated account details.
+
+#### Code Snippets
+```python
+import requests
+
+# Base URL
+base_url = "https://api.bank.com/v1"
+
+# Create a new account
+new_account = {
+    "type": "savings",
+    "balance": 1000.00,
+    "currency": "USD",
+    "status": "Active"
+}
+response = requests.post(f"{base_url}/accounts", json=new_account)
+print(response.json())
+
+# Get account by ID
+account_id = "account123"
+response = requests.get(f"{base_url}/accounts/{account_id}")
+print(response.json())
+
+# Update account
+updated_account = {
+    "type": "savings",
+    "balance": 1500.00,
+    "currency": "USD",
+    "status": "Active"
+}
+response = requests.put(f"{base_url}/accounts/{account_id}", json=updated_account)
+print(response.json())
+```
+
+#### Kafka Topic Details
+- **Topic Name**: `account-updates`
+- **Purpose**: To stream real-time updates of account data changes.
+- **Message Format**: JSON
+```json
+{
+  "event": "ACCOUNT_UPDATED",
+  "accountId": "account123",
+  "changes": {
+    "balance": 1500.00,
+    "status": "Active"
+  }
+}
+```
+
+#### Documentation
+- **API Specification**: Details the REST endpoints, request and response formats.
+- **Integration Guide**: Steps on how to use the APIs, including authentication and error handling.
+- **Kafka Integration**: Explains the Kafka topics, message formats, and how to consume messages.
+- **Batch Processing**: Describes periodic batch processes for balance reconciliation and statement generation.
