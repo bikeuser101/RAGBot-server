@@ -181,7 +181,7 @@ def create_prompt_for_chat(data_dict):
     history_messages.extend(stable_chat_history)
     history_messages.extend(validate_chat_history(chat_history_record))
     # history_messages.extend(validate_chat_history(chat_history))
-    print("New message history = "+len(history_messages))
+    print("New message history = "+str(len(history_messages)))
     context_section = f"\n\nContext:\n{formatted_texts}" if formatted_texts else ""
 
     messages = history_messages + [
