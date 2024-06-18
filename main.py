@@ -252,7 +252,7 @@ def suggestion_prompt_creator(data_dict):
     """
     # formatted_texts = "\n".join(data_dict["context"]["texts"])
     history_messages = [SystemMessage(content="You are AI support agent, who provide suggestions what next user may ask based on chat history. Do not include any suggestions that require internet and do not assume any information.")]
-    history_messages.extend(validate_chat_history(chat_history))
+    history_messages.extend(validate_chat_history(chat_history_record))
 
     messages = history_messages + [
         HumanMessage(content=(data_dict['question']
@@ -308,10 +308,11 @@ def submit_data():
     suggestions = []
     if(result.content != ""):
         chat_history_record.extend([HumanMessage(content=question), AIMessage(content=result.content)])
-        query = ("can you suggest 4 brief and direct instructions/question with short interrogative phrases that user can give to you based on your last response?")
-        query = query + parser.get_format_instructions()
-        suggestions_res = suggestion_chain.invoke(query)
-        suggestions = parser.parse(suggestions_res.content)
+        if(len(chat_history_record)>3):
+            query = ("can you suggest 4 brief and direct instructions/question with short interrogative phrases that user can give to you based on your last response?")
+            query = query + parser.get_format_instructions()
+            suggestions_res = suggestion_chain.invoke(query)
+            suggestions = parser.parse(suggestions_res.content)
         # print('SUggestions')
         # print(suggestions.content)
         # Markdown(suggestions.content)
