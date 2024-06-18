@@ -31,6 +31,8 @@ from langchain_community.document_loaders import TextLoader
 from langchain_google_vertexai import VertexAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 loader = TextLoader('./AccountManagementSystem-AMS.txt')
 docs = loader.load()
@@ -177,8 +179,8 @@ def create_prompt_for_chat(data_dict):
     #         history_messages.append(AIMessage(content=message["text"]))
     # print(prompt.format_messages)
     history_messages.extend(stable_chat_history)
-    history_messages.extend(chat_history_record)
-    history_messages.extend(validate_chat_history(chat_history))
+    history_messages.extend(validate_chat_history(chat_history_record))
+    # history_messages.extend(validate_chat_history(chat_history))
     print("New message history = "+len(history_messages))
     context_section = f"\n\nContext:\n{formatted_texts}" if formatted_texts else ""
 
@@ -234,6 +236,42 @@ chain_multimodal_rag = (
     )
 )
 
+# Suggestion set : START
+
+class Suggestion(BaseModel):
+    suggestion: str = Field(description="suggested question to ask")
+    suggestion_type: str = Field(description="type of suggestion either 'question' or 'instruction")
+parser = JsonOutputParser(pydantic_object=Suggestion)
+parser.get_format_instructions()
+
+
+def suggestion_prompt_creator(data_dict):
+    print(data_dict)
+    """
+    Join the context into a single string
+    """
+    # formatted_texts = "\n".join(data_dict["context"]["texts"])
+    history_messages = [SystemMessage(content="You are AI support agent, who provide suggestions what next user may ask based on chat history. Do not include any suggestions that require internet and do not assume any information.")]
+    history_messages.extend(validate_chat_history(chat_history))
+
+    messages = history_messages + [
+        HumanMessage(content=(data_dict['question']
+        ))
+    ]
+    return messages
+
+suggestion_chain = (
+    {
+        "question": RunnablePassthrough(),
+    }
+    | RunnableLambda(suggestion_prompt_creator)
+    | ChatVertexAI(
+        temperature=0, model_name="gemini-pro", max_output_tokens=1024, top_k=10
+    )
+)
+
+# Suggestion set : END
+
 
 # question = "What is AMS system?"
 # result = chain_multimodal_rag.invoke(question)
@@ -267,11 +305,20 @@ def submit_data():
 
     question = data['prompt']
     result = chain_multimodal_rag.invoke(question)
+    suggestions = []
     if(result.content != ""):
         chat_history_record.extend([HumanMessage(content=question), AIMessage(content=result.content)])
+        query = ("can you suggest 4 brief and direct instructions/question with short interrogative phrases that user can give to you based on your last response?")
+        query = query + parser.get_format_instructions()
+        suggestions_res = suggestion_chain.invoke(query)
+        suggestions = parser.parse(suggestions_res.content)
+        # print('SUggestions')
+        # print(suggestions.content)
+        # Markdown(suggestions.content)
+
     # result
     # Markdown(result.content)
-    return jsonify({'message': 'success', 'data': result.content})
+    return jsonify({'message': 'success', 'message': result.content, 'suggestions':suggestions})
 
 
 if __name__ == '__main__':
